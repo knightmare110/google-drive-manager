@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+
+# Logs
+logs
+*.log
+
+# Environment Variables
+.env
+
+# Frontend build files
+/frontend/build/
+/frontend/node_modules/
+
+# Ignore Mac OS-specific files
+.DS_Store
