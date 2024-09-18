@@ -2,6 +2,7 @@ const { google } = require('googleapis');
 const { getOAuth2Client } = require('../utils/googleDrive');
 const { Readable } = require('stream');
 
+// Convert buffer to stream
 function bufferToStream(buffer) {
   const readable = new Readable();
   readable._read = () => {};
@@ -12,8 +13,13 @@ function bufferToStream(buffer) {
 
 // List Files
 const listFiles = async (req, res) => {
+  const token = req.cookies.authToken; // Get token from cookie
+  if (!token) {
+    return res.status(401).send('Unauthorized: No token found');
+  }
+
   const oAuth2Client = getOAuth2Client();
-  oAuth2Client.setCredentials({ access_token: req.headers.authorization });
+  oAuth2Client.setCredentials({ access_token: token });
 
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
   
@@ -30,8 +36,13 @@ const listFiles = async (req, res) => {
 
 // Upload File
 const uploadFile = async (req, res) => {
+  const token = req.cookies.authToken; // Get token from cookie
+  if (!token) {
+    return res.status(401).send('Unauthorized: No token found');
+  }
+
   const oAuth2Client = getOAuth2Client();
-  oAuth2Client.setCredentials({ access_token: req.headers.authorization });
+  oAuth2Client.setCredentials({ access_token: token });
 
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
@@ -42,34 +53,28 @@ const uploadFile = async (req, res) => {
     mimeType: req.file.mimetype,
     body: bufferToStream(req.file.buffer),
   };
-  const requestBody = {
-    name: req.file.originalname,
-    fields: 'id',
-  }
 
   try {
-    console.log('test', {
-      resource: fileMetadata,
-      media: media,
-      requestBody: requestBody,
-      fields: 'id',
-    });
     const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
-      requestBody: requestBody,
       fields: 'id',
     });
-    res.status(201).send(file.id);
+    res.status(201).send(file.data.id);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(500).send('Error uploading file');
   }
 };
 
 // Download File
 const downloadFile = async (req, res) => {
+  const token = req.cookies.authToken; // Get token from cookie
+  if (!token) {
+    return res.status(401).send('Unauthorized: No token found');
+  }
+
   const oAuth2Client = getOAuth2Client();
-  oAuth2Client.setCredentials({ access_token: req.headers.authorization });
+  oAuth2Client.setCredentials({ access_token: token });
 
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
@@ -79,7 +84,7 @@ const downloadFile = async (req, res) => {
 
     file.data
       .on('end', () => res.status(200).end())
-      .on('error', err => res.status(500).send('Error downloading file'))
+      .on('error', (err) => res.status(500).send('Error downloading file'))
       .pipe(res);
   } catch (error) {
     res.status(500).send('Error downloading file');
@@ -88,8 +93,13 @@ const downloadFile = async (req, res) => {
 
 // Delete File
 const deleteFile = async (req, res) => {
+  const token = req.cookies.authToken; // Get token from cookie
+  if (!token) {
+    return res.status(401).send('Unauthorized: No token found');
+  }
+
   const oAuth2Client = getOAuth2Client();
-  oAuth2Client.setCredentials({ access_token: req.headers.authorization });
+  oAuth2Client.setCredentials({ access_token: token });
 
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 

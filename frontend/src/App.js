@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const App = () => {
-  const [token, setToken] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [files, setFiles] = useState([]);
   const [file, setFile] = useState(null);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('token');
-    if (accessToken) {
-      setToken(accessToken);
-      fetchFiles(accessToken);
-    }
+    checkLoginStatus();
   }, []);
 
   const authenticate = async () => {
@@ -20,12 +15,33 @@ const App = () => {
     window.location.href = data.authUrl;
   };
 
-  const fetchFiles = async (accessToken) => {
+  const fetchFiles = async () => {
     const { data } = await axios.get('http://localhost:5000/api/drive/files', {
-      headers: { Authorization: accessToken },
+      withCredentials: true,
     });
     setFiles(data);
   };
+
+  const checkLoginStatus = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/auth/status', {
+        withCredentials: true, // Include HTTP-only cookies
+      });
+  
+      if (response.data.loggedIn) {
+        console.log('User is logged in');
+        // Handle logged-in user, e.g., show dashboard
+        setIsLoggedIn(true);
+        fetchFiles();
+      } else {
+        console.log('User is not logged in');
+        // Handle user not logged in, e.g., show login page
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
+      console.error('Error checking login status:', error);
+    }
+  };  
 
   const uploadFile = async () => {
     const formData = new FormData();
@@ -33,16 +49,16 @@ const App = () => {
 
     await axios.post('http://localhost:5000/api/drive/upload', formData, {
       headers: {
-        Authorization: token,
         'Content-Type': 'multipart/form-data',
       },
+      withCredentials: true
     });
-    fetchFiles(token);
+    fetchFiles();
   };
 
   const downloadFile = async (fileId) => {
     const response = await axios.get(`http://localhost:5000/api/drive/files/${fileId}`, {
-      headers: { Authorization: token },
+      withCredentials: true,
       responseType: 'blob',
     });
 
@@ -56,15 +72,15 @@ const App = () => {
 
   const deleteFile = async (fileId) => {
     await axios.delete(`http://localhost:5000/api/drive/files/${fileId}`, {
-      headers: { Authorization: token },
+      withCredentials: true,
     });
-    fetchFiles(token);
+    fetchFiles();
   };
 
   return (
     <div className="App">
       <h1>Google Drive Integration</h1>
-      {!token ? (
+      {!isLoggedIn ? (
         <button onClick={authenticate}>Login with Google</button>
       ) : (
         <div>
