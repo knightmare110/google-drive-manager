@@ -5,7 +5,6 @@ import FileList from '../../components/FileList';
 const Dashboard = () => {
   return (
     <div>
-      <h1>Dashboard</h1>
       {/* Render the file upload and file listing components */}
       <FileUpload />
       <FileList />
