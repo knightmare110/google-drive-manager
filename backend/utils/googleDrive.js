@@ -2,8 +2,6 @@ const { google } = require('googleapis');
 const { OAuth2 } = google.auth;
 require('dotenv').config();
 
-console.log('t', process.env.CLIENT_ID, process.env.CLIENT_SECRET);
-
 const oAuth2Client = new OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
@@ -11,7 +9,7 @@ const oAuth2Client = new OAuth2(
 );
 
 // Scopes allow the app to access specific functionality on Google Drive
-const SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file'];
+const SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'openid', 'email', 'profile'];
 
 const getAuthUrl = () => {
   const authUrl = oAuth2Client.generateAuthUrl({
