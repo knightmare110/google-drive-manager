@@ -1,26 +1,26 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { BASE_API_URL } from "../../utils/constant";
-import { useNavigate } from "react-router-dom"; // For redirection
-import Modal from "../Modal"; // Import the Modal component
+import { useNavigate } from "react-router-dom";
+import Modal from "../Modal";
 
 const FileUpload = () => {
-  const [files, setFiles] = useState([]); // Store selected files
-  const [uploadProgress, setUploadProgress] = useState([]); // Store progress for each file
-  const [isModalOpen, setIsModalOpen] = useState(false); // Manage modal state
+  const [files, setFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const navigate = useNavigate(); // React Router hook for navigation
+  const navigate = useNavigate();
 
   // Handle file selection
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles(selectedFiles);
-    setUploadProgress(selectedFiles.map(() => ({ progress: 0, status: "pending" }))); // Initialize progress
+    setUploadProgress(selectedFiles.map(() => ({ progress: 0, status: "pending" })));
   };
 
   // Upload files one by one
   const uploadFiles = async () => {
-    const newUploadProgress = [...uploadProgress]; // Copy the progress state
+    const newUploadProgress = [...uploadProgress];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -37,8 +37,9 @@ const FileUpload = () => {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
           onUploadProgress: (progressEvent) => {
-            // Update progress for the current file
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
             newUploadProgress[i].progress = percentCompleted;
             setUploadProgress([...newUploadProgress]);
           },
@@ -56,22 +57,23 @@ const FileUpload = () => {
       }
     }
 
-    // Open the modal after all uploads are complete
-    setIsModalOpen(true);
+    // Open modal after all uploads are done
+		if(files.length > 0)
+    	setIsModalOpen(true);
   };
 
-  // Handle modal confirmation (redirect to file list page)
+  // Handle modal confirmation
   const handleConfirm = () => {
-    setIsModalOpen(false); // Close the modal
-    navigate("/file-list"); // Redirect to file list page
+    setIsModalOpen(false);
+    navigate("/file-list");
   };
 
   return (
     <div>
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onConfirm={handleConfirm} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirm}
       />
       <div className="sm:max-w-lg w-full p-10 bg-white rounded-xl z-10">
         <div className="text-center">
@@ -111,8 +113,8 @@ const FileUpload = () => {
           </button>
         </div>
 
-        {/* Show upload progress cards */}
-        <div className="space-y-4">
+        {/* Scrollable container for upload progress */}
+        <div className="max-h-80 overflow-y-auto space-y-4"> {/* Set a max height and enable vertical scrolling */}
           {files.map((file, index) => (
             <div key={index} className="p-4 bg-gray-100 rounded-lg shadow">
               <div className="flex justify-between items-center">

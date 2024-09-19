@@ -68,7 +68,7 @@ const App = () => {
     <Router>
       <div className="flex h-screen">
         {isLoggedIn && <Sidebar onSignOut={signOut} />}
-        <div className="flex-grow p-6 bg-gray-100">
+        <div className="flex-grow p-6 bg-gray-100 flex-1">
           <Routes>
             <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/upload" />} />
             <Route path="/upload" element={<PrivateRoute isLoggedIn={isLoggedIn} element={Upload} />} />

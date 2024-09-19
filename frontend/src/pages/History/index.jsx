@@ -1,70 +1,88 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { BASE_API_URL } from '../../utils/constant';
-import LoadingSpinner from '../../components/LoadingSpinner'; // Import the spinner
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { BASE_API_URL } from "../../utils/constant";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import Table from "../../components/Table"; // Import the reusable Table component
 
 const History = () => {
   const [history, setHistory] = useState([]);
-  const [lastKey, setLastKey] = useState(null); // Pagination key
-  const [isFetching, setIsFetching] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
 
-  const fetchHistory = async (paginationKey = null) => {
-    setIsFetching(true); // Start loading
+  const limit = 10;
+
+  useEffect(() => {
+    fetchHistory(page);
+  }, [page]);
+
+  // Fetch history logs with pagination
+  const fetchHistory = async (page) => {
+    setLoading(true);
     try {
-      const { data } = await axios.get(`${BASE_API_URL}history`, {
-        params: { lastKey: paginationKey }, // Pass pagination key (if any)
-        withCredentials: true,
+      const response = await axios.get(`${BASE_API_URL}history`, {
+        params: { page, limit, LastEvaluatedKey: lastEvaluatedKey },
       });
-
-      setHistory((prevHistory) => [...prevHistory, ...data.items]);
-      setLastKey(data.lastKey); // Update lastKey for pagination
+      setHistory(response.data.history);
+      setLastEvaluatedKey(response.data.lastEvaluatedKey);
     } catch (error) {
-      console.error('Error fetching history:', error);
+      console.error("Error fetching history:", error);
     } finally {
-      setIsFetching(false); // Stop loading
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchHistory(); // Initial load of history data
-  }, []);
+  const handlePageChange = (newPage) => {
+    if (newPage > 0) setPage(newPage);
+  };
+
+  // Define the table columns
+  const columns = ["File Name", "File Type", "File Size", "Action Type", "Status", "Date"];
+
+  // Prepare the data for the table rows
+  const tableData = history.map((log) => ({
+    name: log.name,
+    mimeType: log.mimeType,
+    size: `${(log.size / 1000).toFixed(2)} KB`,
+    type: log.type === 0 ? "Upload" : log.type === 1 ? "Download" : "Delete",
+    isSucceed: log.isSucceed ? (
+      <span className="text-green-500 font-semibold">Success</span>
+    ) : (
+      <span className="text-red-500 font-semibold">Failed</span>
+    ),
+    createdAt: new Date(log.createdAt).toLocaleString(),
+  }));
 
   return (
     <div>
-      {isFetching && <LoadingSpinner />} {/* Show full-screen spinner during data fetch */}
+      {loading && <LoadingSpinner />}
 
-      <h2 className="text-2xl font-bold mb-4">History</h2>
-      <table className="w-full bg-white shadow-md rounded mb-4">
-        <thead>
-          <tr className="bg-gray-200 text-left">
-            <th className="py-2 px-4">File Name</th>
-            <th className="py-2 px-4">File Type</th>
-            <th className="py-2 px-4">Action</th>
-            <th className="py-2 px-4">Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          {history.map((item) => (
-            <tr key={item.id}>
-              <td className="py-2 px-4">{item.name}</td>
-              <td className="py-2 px-4">{item.mimeType}</td>
-              <td className="py-2 px-4">{item.type}</td>
-              <td className="py-2 px-4">{new Date(item.createdAt).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="w-full rounded-xl z-10">
+        <h2 className="mt-5 text-3xl font-bold text-gray-900">Upload History</h2>
 
-      <div className="flex justify-center">
-        {lastKey && (
-          <button 
-            onClick={() => fetchHistory(lastKey)} 
-            disabled={isFetching} 
-            className="bg-gray-500 text-white px-4 py-2 rounded"
+        {/* Use reusable Table component */}
+        <Table columns={columns} data={tableData} />
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+            disabled={page === 1}
           >
-            {isFetching ? 'Loading...' : 'Load More'}
+            Prev
           </button>
-        )}
+
+          <span className="text-sm text-gray-500">Page {page}</span>
+
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+            disabled={!lastEvaluatedKey}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );
