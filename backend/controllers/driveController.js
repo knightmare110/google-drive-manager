@@ -1,6 +1,7 @@
 const { google } = require('googleapis');
 const { getOAuth2Client } = require('../utils/googleDrive');
 const { Readable } = require('stream');
+const { saveHistory } = require('../utils/aws');
 
 // Convert buffer to stream
 function bufferToStream(buffer) {
@@ -37,6 +38,7 @@ const listFiles = async (req, res) => {
 // Upload File
 const uploadFile = async (req, res) => {
   const token = req.cookies.authToken; // Get token from cookie
+  const userEmail = req.cookies.userEmail;
   if (!token) {
     return res.status(401).send('Unauthorized: No token found');
   }
@@ -58,10 +60,36 @@ const uploadFile = async (req, res) => {
     const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
-      fields: 'id',
+      fields: 'id, webViewLink, webContentLink',
     });
+
+    const fileDetails = {
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
+      createdAt: new Date().toISOString(),
+      isSucceed: true,
+      googleDriveLink: file.data.webViewLink,
+      userEmail: userEmail,
+      type: 0
+    };
+
+    await saveHistory(fileDetails);
+
     res.status(201).send(file.data.id);
   } catch (error) {
+    const fileDetails = {
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
+      createdAt: new Date().toISOString(),
+      isSucceed: false,
+      failedReason: error.message,
+      userEmail: userEmail,
+      type: 0
+    };
+
+    await saveHistory(fileDetails);
     res.status(500).send('Error uploading file');
   }
 };
@@ -69,6 +97,8 @@ const uploadFile = async (req, res) => {
 // Download File
 const downloadFile = async (req, res) => {
   const token = req.cookies.authToken; // Get token from cookie
+  const userEmail = req.cookies.userEmail;
+
   if (!token) {
     return res.status(401).send('Unauthorized: No token found');
   }
@@ -80,20 +110,56 @@ const downloadFile = async (req, res) => {
 
   try {
     const fileId = req.params.fileId;
+    const fileMetadata = await drive.files.get({
+      fileId: fileId,
+      fields: 'id, name, mimeType, size, webViewLink, webContentLink',
+    });
+
     const file = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
 
     file.data
-      .on('end', () => res.status(200).end())
-      .on('error', (err) => res.status(500).send('Error downloading file'))
+      .on('end', async () => {
+        const fileDetails = {
+          fileName: fileMetadata.data.name,
+          fileType: fileMetadata.data.mimeType,
+          fileSize: fileMetadata.data.size,
+          createdAt: new Date().toISOString(),
+          isSucceed: true,
+          googleDriveLink: fileMetadata.data.webViewLink,
+          userEmail: userEmail,
+          type: 1
+        };
+        
+        await saveHistory(fileDetails);
+        res.status(200).end()
+      })
+      .on('error', async(err) => {
+        const fileDetails = {
+          fileName: fileMetadata.data.name,
+          fileType: fileMetadata.data.mimeType,
+          fileSize: fileMetadata.data.size,
+          createdAt: new Date().toISOString(),
+          isSucceed: false,
+          googleDriveLink: fileMetadata.data.webViewLink,
+          userEmail: userEmail,
+          type: 1,
+          failedReason: err.message
+        };
+        
+        await saveHistory(fileDetails);
+        res.status(500).send('Error downloading file: ' + err.message)
+      })
       .pipe(res);
   } catch (error) {
-    res.status(500).send('Error downloading file');
+    res.status(500).send('Error downloading file: ' + error.message);
   }
 };
 
 // Delete File
 const deleteFile = async (req, res) => {
   const token = req.cookies.authToken; // Get token from cookie
+  const userEmail = req.cookies.userEmail;
+
   if (!token) {
     return res.status(401).send('Unauthorized: No token found');
   }
@@ -103,10 +169,38 @@ const deleteFile = async (req, res) => {
 
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
+  const fileMetadata = await drive.files.get({
+    fileId: req.params.fileId,
+    fields: 'id, name, mimeType, size, webViewLink, webContentLink',
+  });
+
   try {
     await drive.files.delete({ fileId: req.params.fileId });
+    const fileDetails = {
+      fileName: fileMetadata.data.name,
+      fileType: fileMetadata.data.mimeType,
+      fileSize: fileMetadata.data.size,
+      createdAt: new Date().toISOString(),
+      isSucceed: true,
+      userEmail: userEmail,
+      type: 2
+    };
+    
+    await saveHistory(fileDetails);
     res.status(204).end();
   } catch (error) {
+    const fileDetails = {
+      fileName: fileMetadata.data.name,
+      fileType: fileMetadata.data.mimeType,
+      fileSize: fileMetadata.data.size,
+      createdAt: new Date().toISOString(),
+      isSucceed: false,
+      userEmail: userEmail,
+      type: 1,
+      failedReason: error.message
+    };
+    
+    await saveHistory(fileDetails);
     res.status(500).send('Error deleting file');
   }
 };

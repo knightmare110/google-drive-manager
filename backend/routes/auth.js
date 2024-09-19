@@ -1,6 +1,7 @@
 const express = require('express');
 const { getAuthUrl, getOAuth2Client } = require('../utils/googleDrive');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
 // Get Google OAuth URL
 router.get('/google', (req, res) => {
@@ -14,7 +15,13 @@ router.get('/google/callback', async (req, res) => {
   const oAuth2Client = getOAuth2Client();
   
   try {
+    console.log('t1', code);
     const { tokens } = await oAuth2Client.getToken(code);
+
+    console.log('t2', tokens.id_token);
+    const decodedToken = jwt.decode(tokens.id_token);
+
+    console.log('decodedTOken', decodedToken)
 
     res.cookie('authToken', tokens.access_token, {
       httpOnly: true,
@@ -27,6 +34,12 @@ router.get('/google/callback', async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       maxAge: tokens.expiry_date - Date.now()
     });
+
+    res.cookie('userEmail', decodedToken.email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: tokens.expiry_date - Date.now()
+    })
 
     oAuth2Client.setCredentials(tokens);
 
