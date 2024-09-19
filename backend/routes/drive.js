@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { listFiles, uploadFile, downloadFile, deleteFile } = require('../controllers/driveController');
+const { listFiles, uploadFile, downloadFile, deleteFile } = require('../controllers/drive');
 
 const router = express.Router();
 const upload = multer(); // Multer middleware to handle file uploads
