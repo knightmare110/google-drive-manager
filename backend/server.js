@@ -4,6 +4,7 @@ const cors = require("cors");
 const cookieParser = require('cookie-parser');
 const authRoutes = require("./routes/auth"); // Importing authentication routes
 const driveRoutes = require("./routes/drive"); // Importing drive routes
+const historyRoutes = require("./routes/history");
 
 const app = express();
 const PORT = 5000;
@@ -16,6 +17,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes); // Route for authentication (OAuth2)
 app.use("/api/drive", driveRoutes); // Route for Drive operations
+app.use("/api/history", historyRoutes); // Route for History Operation
 
 // Starting the server
 app.listen(PORT, () => {
