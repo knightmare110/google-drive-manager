@@ -2,13 +2,22 @@ const { getDriveInstance, getFileMetadata, logFileHistory, bufferToStream } = re
 
 // List Files
 const listFiles = async (req, res) => {
+  const token = req.cookies.authToken;
+  const { pageToken } = req.query; // Get pageToken from query params for pagination
+
   try {
-    const drive = getDriveInstance(req.cookies.authToken);
+    const drive = getDriveInstance(token);
     const response = await drive.files.list({
-      pageSize: 10,
-      fields: 'files(id, name, mimeType, modifiedTime)',
+      pageSize: 10, // Number of files per page
+      pageToken: pageToken || null, // Use the provided pageToken or null for the first page
+      fields: 'nextPageToken, files(id, name, mimeType, modifiedTime)',
     });
-    res.json(response.data.files);
+
+    // Send response with files and nextPageToken
+    res.json({
+      files: response.data.files,
+      nextPageToken: response.data.nextPageToken || null, // Pass nextPageToken for pagination
+    });
   } catch (error) {
     res.status(500).send('Error fetching files: ' + error.message);
   }

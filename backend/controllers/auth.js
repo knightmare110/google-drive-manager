@@ -65,8 +65,16 @@ const checkAuthStatus = (req, res) => {
   return res.json({ loggedIn: true });
 };
 
+const signOut = (req, res) => {
+  res.clearCookie('authToken');
+  res.clearCookie('authExpiry');
+  res.clearCookie('userEmail');
+  res.status(200).send('Logged out successfully');
+}
+
 module.exports = {
   getGoogleAuthUrl,
   googleOAuthCallback,
   checkAuthStatus,
+  signOut
 };

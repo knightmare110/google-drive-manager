@@ -1,5 +1,5 @@
 const express = require('express');
-const { getGoogleAuthUrl, googleOAuthCallback, checkAuthStatus } = require('../controllers/auth');
+const { getGoogleAuthUrl, googleOAuthCallback, checkAuthStatus, signOut } = require('../controllers/auth');
 
 const router = express.Router();
 
@@ -11,5 +11,7 @@ router.get('/google/callback', googleOAuthCallback);
 
 // Route to check authentication status
 router.get('/status', checkAuthStatus);
+
+router.post('/logout', signOut);
 
 module.exports = router;
