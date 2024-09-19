@@ -37,21 +37,11 @@ const uploadFile = async (req, res) => {
       fields: 'id, webViewLink, webContentLink',
     });
 
-    const fileDetails = {
-      fileName: req.file.originalname,
-      fileType: req.file.mimetype,
-      fileSize: req.file.size,
-      googleDriveLink: file.data.webViewLink,
-    };
+    const fileDetails = await getFileMetadata(drive, file.data.id);
 
     await logFileHistory(fileDetails, userEmail, true, 0);
     res.status(201).send(file.data.id);
   } catch (error) {
-    const fileDetails = {
-      fileName: req.file.originalname,
-      fileType: req.file.mimetype,
-      fileSize: req.file.size,
-    };
     await logFileHistory(fileDetails, userEmail, false, 0, error.message);
     res.status(500).send('Error uploading file: ' + error.message);
   }

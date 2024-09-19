@@ -1,32 +1,26 @@
-const AWS = require("aws-sdk");
+const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-// List History from DynamoDB with Pagination
+// Get paginated history
 const listHistory = async (req, res) => {
-  const { lastKey } = req.query; // Get lastKey (pagination token) from query params
+  const { page = 1, limit = 10 } = req.query; // Get page and limit from query params
 
   const params = {
     TableName: process.env.AWS_DYNAMO_DB_TABLE_NAME,
-    Limit: 10, // Number of items per page
-    ExclusiveStartKey: lastKey ? JSON.parse(lastKey) : undefined, // Use lastKey for pagination if present
+    Limit: limit,
+    ExclusiveStartKey: req.query.LastEvaluatedKey || null, // For pagination
   };
 
   try {
     const data = await dynamoDb.scan(params).promise();
-
-    // Respond with items and the next pagination key (if available)
+    
     res.json({
-      items: data.Items,
-      lastKey: data.LastEvaluatedKey
-        ? JSON.stringify(data.LastEvaluatedKey)
-        : null, // Send next key for pagination
+      history: data.Items,
+      lastEvaluatedKey: data.LastEvaluatedKey, // For pagination
     });
   } catch (error) {
-    console.error("Error fetching history:", error);
-    res.status(500).send("Error fetching history: " + error.message);
+    res.status(500).send('Error fetching history logs: ' + error.message);
   }
 };
 
-module.exports = {
-  listHistory,
-};
+module.exports = { listHistory };
