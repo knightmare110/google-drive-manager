@@ -26,6 +26,7 @@ const listFiles = async (req, res) => {
 // Upload File
 const uploadFile = async (req, res) => {
   const { authToken, userEmail } = req.cookies;
+  let fileDetails; // Declare fileDetails at the top
   try {
     const drive = getDriveInstance(authToken);
     const fileMetadata = { name: req.file.originalname };
@@ -37,15 +38,21 @@ const uploadFile = async (req, res) => {
       fields: 'id, webViewLink, webContentLink',
     });
 
-    const fileDetails = await getFileMetadata(drive, file.data.id);
+    fileDetails = await getFileMetadata(drive, file.data.id); // Assign fileDetails here
 
-    await logFileHistory(fileDetails, userEmail, true, 0);
+    await logFileHistory(fileDetails, userEmail, true, 0); // Log success
     res.status(201).send(file.data.id);
   } catch (error) {
-    await logFileHistory(fileDetails, userEmail, false, 0, error.message);
+    console.log('er', error);
+    if (!fileDetails) {
+      // If fileDetails is not defined due to an error during creation, use a default
+      fileDetails = { name: req.file.originalname };
+    }
+    await logFileHistory(fileDetails, userEmail, false, 0, error.message); // Log failure
     res.status(500).send('Error uploading file: ' + error.message);
   }
 };
+
 
 // Download File
 const downloadFile = async (req, res) => {

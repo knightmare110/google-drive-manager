@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import axios from 'axios';
 import Upload from './pages/Upload';
 import FileList from './pages/FileList';
 import History from './pages/History';
 import Login from './pages/Login';
 import { BASE_API_URL } from './utils/constant';
 import './index.css'; // Import Tailwind CSS
+import { checkStatus, signOut } from './apis/auth';
 
 const Sidebar = ({ onSignOut }) => (
   <div className="w-64 bg-gray-800 text-white h-full">
@@ -39,25 +39,27 @@ const App = () => {
 
   useEffect(() => {
     const checkLoginStatus = async () => {
-      try {
-        const response = await axios.get(`${BASE_API_URL}auth/status`, { withCredentials: true });
+      setLoading(true);
+      const {success, response} = await checkStatus();
+      if(success) {
         setIsLoggedIn(response.data.loggedIn);
-      } catch (error) {
+      } else {
         setIsLoggedIn(false);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
     checkLoginStatus();
   }, []);
 
-  const signOut = async () => {
-    try {
-      await axios.post(`${BASE_API_URL}auth/logout`, {}, { withCredentials: true });
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.error('Error during sign out:', error);
-    }
+  const onSignOut = async () => {
+    setLoading(true);
+      const {success, response} = await signOut();
+      if(success) {
+        setIsLoggedIn(response.data.loggedIn);
+      } else {
+        setIsLoggedIn(false);
+      }
+      setLoading(false);
   };
 
   if (loading) {
@@ -67,7 +69,7 @@ const App = () => {
   return (
     <Router>
       <div className="flex h-screen">
-        {isLoggedIn && <Sidebar onSignOut={signOut} />}
+        {isLoggedIn && <Sidebar onSignOut={onSignOut} />}
         <div className="flex-grow p-6 bg-gray-100 flex-1">
           <Routes>
             <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/upload" />} />
