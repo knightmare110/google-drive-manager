@@ -3,8 +3,12 @@ const jwt = require('jsonwebtoken');
 
 // Get Google OAuth URL
 const getGoogleAuthUrl = (req, res) => {
-  const authUrl = getAuthUrl();
-  res.send({ authUrl });
+  try {
+    const authUrl = getAuthUrl();
+    res.status(200).send({ authUrl });
+  } catch (error) {
+    res.status(500).send("Failed to get Google Auth URL");
+  }
 };
 
 // Handle OAuth callback

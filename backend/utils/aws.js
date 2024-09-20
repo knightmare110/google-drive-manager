@@ -4,9 +4,12 @@ require("dotenv").config();
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-AWS.config.update({
-	region: process.env.AWS_REGION
-})
+if (process.env.NODE_ENV !== 'test') {
+  AWS.config.update({
+    region: process.env.AWS_REGION,
+  });
+}
+
 
 const saveHistory = async (fileDetails) => {
   const params = {

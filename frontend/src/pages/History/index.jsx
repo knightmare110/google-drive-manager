@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { BASE_API_URL } from "../../utils/constant";
+import { HISTORY_TABLE_COLUMNS } from "../../utils/constant";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Table from "../../components/Table"; // Import the reusable Table component
+import { listHistory } from "../../apis/history";
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -19,25 +19,24 @@ const History = () => {
   // Fetch history logs with pagination
   const fetchHistory = async (page) => {
     setLoading(true);
-    try {
-      const response = await axios.get(`${BASE_API_URL}history`, {
-        params: { page, limit, LastEvaluatedKey: lastEvaluatedKey },
-      });
+    console.log('ttt', page, limit, lastEvaluatedKey);
+    const { response, error, success } = await listHistory({
+      page,
+      limit,
+      LastEvaluatedKey: lastEvaluatedKey,
+    });
+    if (success) {
       setHistory(response.data.history);
       setLastEvaluatedKey(response.data.lastEvaluatedKey);
-    } catch (error) {
+    } else {
       console.error("Error fetching history:", error);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handlePageChange = (newPage) => {
     if (newPage > 0) setPage(newPage);
   };
-
-  // Define the table columns
-  const columns = ["File Name", "File Type", "File Size", "Action Type", "Status", "Date"];
 
   // Prepare the data for the table rows
   const tableData = history.map((log) => ({
@@ -54,31 +53,43 @@ const History = () => {
   }));
 
   return (
-    <div>
-      {loading && <LoadingSpinner />}
+    <div data-testid="history-page">
+      {loading && <LoadingSpinner data-testid="loading-spinner" />}
 
       <div className="w-full rounded-xl z-10">
-        <h2 className="mt-5 text-3xl font-bold text-gray-900">Upload History</h2>
+        <h2
+          className="mt-5 text-3xl font-bold text-gray-900"
+          data-testid="history-heading"
+        >
+          View History
+        </h2>
 
         {/* Use reusable Table component */}
-        <Table columns={columns} data={tableData} />
+        <Table columns={HISTORY_TABLE_COLUMNS} data={tableData} />
 
         {/* Pagination Controls */}
-        <div className="flex justify-between items-center mt-4">
+        <div
+          className="flex justify-between items-center mt-4"
+          data-testid="pagination-controls"
+        >
           <button
             onClick={() => handlePageChange(page - 1)}
             className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
             disabled={page === 1}
+            data-testid="prev-page-button"
           >
             Prev
           </button>
 
-          <span className="text-sm text-gray-500">Page {page}</span>
+          <span className="text-sm text-gray-500" data-testid="page-indicator">
+            Page {page}
+          </span>
 
           <button
             onClick={() => handlePageChange(page + 1)}
             className="px-4 py-2 bg-blue-500 text-white rounded"
             disabled={!lastEvaluatedKey}
+            data-testid="next-page-button"
           >
             Next
           </button>
